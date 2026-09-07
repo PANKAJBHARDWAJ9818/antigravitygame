@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KUNG-FU STREET BRAWL: DOJO REVENGE</title>
+  <style>
+    /* =========================================================
+       KUNG-FU STREET BRAWL - RETRO SYNTHWAVE STYLING
+       ========================================================= */
+    :root {
+      --neon-cyan: #00f3ff;
+      --neon-yellow: #ffe600;
+      --neon-pink: #ff007f;
+      --neon-red: #ff0055;
+      --neon-blue: #00a2ff;
+      --neon-purple: #9900ff;
+      --dark-navy: #060814;
+      --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--dark-navy);
+      font-family: var(--font-family);
+      color: #ffffff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Arcade CRT Scanline & Vignette Effect */
+    .crt-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                  radial-gradient(circle, rgba(0,0,0,0) 65%, rgba(0,0,0,0.6) 100%);
+      background-size: 100% 4px, 100% 100%;
+      z-index: 5;
+    }
+
+    /* =========================================================
+       HUD OVERLAY
+       ========================================================= */
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      padding: 20px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .hud-card {
+      background: rgba(6, 10, 24, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 243, 255, 0.35);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.2), inset 0 0 10px rgba(0, 243, 255, 0.08);
+      border-radius: 14px;
+      padding: 10px 18px;
+    }
+
+    /* Player Status (Health & Ki) */
+    .player-bars {
+      min-width: 260px;
+    }
+
+    .bar-row {
+      margin-bottom: 8px;
+    }
+
+    .bar-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .bar-label-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+
+    .meter-wrap {
+      width: 100%;
+      height: 14px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 7px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    #hp-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff0055 0%, #00f3ff 100%);
+      box-shadow: 0 0 12px var(--neon-cyan);
+      transition: width 0.1s ease-out;
+    }
+
+    #ki-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ffe600 0%, #ff007f 100%);
+      box-shadow: 0 0 12px var(--neon-yellow);
+      transition: width 0.1s ease-out;
+    }
+
+    .ki-ready {
+      animation: ki-pulse 0.5s infinite alternate;
+    }
+
+    @keyframes ki-pulse {
+      from { filter: brightness(1) drop-shadow(0 0 5px var(--neon-yellow)); }
+      to { filter: brightness(1.7) drop-shadow(0 0 18px var(--neon-pink)); }
+    }
+
+    /* Combo Banner & Center Toasts */
+    .hud-center {
+      position: absolute;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .combo-badge {
+      display: none;
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: var(--neon-yellow);
+      text-shadow: 0 0 20px rgba(255, 230, 0, 0.9), 0 0 35px rgba(255, 0, 127, 0.6);
+      animation: pop-combo 0.15s ease-out;
+    }
+
+    @keyframes pop-combo {
+      0% { transform: scale(0.8); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .alert-banner {
+      opacity: 0;
+      transform: scale(0.85);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      background: linear-gradient(135deg, rgba(255, 0, 127, 0.95), rgba(153, 0, 255, 0.95));
+      border: 2px solid #ffffff;
+      border-radius: 20px;
+      padding: 12px 36px;
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #ffffff;
+      box-shadow: 0 0 35px rgba(255, 0, 127, 0.8), 0 0 50px rgba(0, 243, 255, 0.4);
+      margin-top: 10px;
+      white-space: nowrap;
+    }
+
+    .alert-banner.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Top Right Score & Sound */
+    .hud-top-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .score-card {
+      text-align: right;
+      min-width: 170px;
+    }
+
+    #score-val {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--neon-yellow);
+      text-shadow: 0 0 14px rgba(255, 230, 0, 0.8);
+      line-height: 1.1;
+    }
+
+    .btn-audio {
+      pointer-events: auto;
+      background: rgba(6, 10, 24, 0.85);
+      border: 1px solid rgba(0, 243, 255, 0.35);
+      border-radius: 12px;
+      color: #ffffff;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+      transition: transform 0.1s ease;
+    }
+
+    .btn-audio:hover {
+      transform: scale(1.08);
+    }
+
+    /* Bottom Boss Bar */
+    .hud-bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    #boss-bar-card {
+      display: none;
+      width: 100%;
+      max-width: 580px;
+      border-color: rgba(153, 0, 255, 0.5);
+      box-shadow: 0 0 25px rgba(153, 0, 255, 0.3);
+      margin-bottom: 8px;
+    }
+
+    #boss-hp-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff0055 0%, #9900ff 100%);
+      box-shadow: 0 0 12px var(--neon-purple);
+      transition: width 0.15s ease-out;
+    }
+
+    /* "GO --->" Scrolling Arrow */
+    #go-arrow {
+      display: none;
+      position: absolute;
+      right: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 3rem;
+      font-weight: 900;
+      color: var(--neon-yellow);
+      text-shadow: 0 0 20px var(--neon-yellow), 0 0 40px var(--neon-pink);
+      animation: blink-arrow 0.6s infinite alternate;
+    }
+
+    @keyframes blink-arrow {
+      from { opacity: 0.2; transform: translateY(-50%) translateX(-15px); }
+      to { opacity: 1; transform: translateY(-50%) translateX(5px); }
+    }
+
+    /* =========================================================
+       MODAL SCREENS (START, GAME OVER, VICTORY)
+       ========================================================= */
+    .screen-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 6, 14, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 20px;
+    }
+
+    .screen-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(150deg, #0f152e 0%, #060914 100%);
+      border: 2px solid var(--neon-cyan);
+      box-shadow: 0 0 45px rgba(0, 243, 255, 0.4), inset 0 0 25px rgba(0, 243, 255, 0.15);
+      border-radius: 26px;
+      padding: 38px 46px;
+      max-width: 620px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .game-logo-title {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(0, 243, 255, 0.8), 0 0 40px rgba(255, 0, 127, 0.5);
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .game-logo-title span {
+      color: var(--neon-yellow);
+      text-shadow: 0 0 25px rgba(255, 230, 0, 0.9);
+    }
+
+    .game-tagline {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+
+    /* Controls Matrix */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .ctrl-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+
+    .kbd {
+      background: #141c38;
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      box-shadow: 0 0 8px rgba(0, 243, 255, 0.3);
+      white-space: nowrap;
+    }
+
+    .ctrl-desc {
+      color: #cbd5e1;
+      font-size: 0.8rem;
+    }
+
+    /* Enemies Roster */
+    .roster-row {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 26px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .roster-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-ninja { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
+    .dot-striker { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+    .dot-boss { background: var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple); }
+
+    /* Action Buttons */
+    .neon-arcade-btn {
+      background: linear-gradient(135deg, #00f3ff 0%, #0066ff 100%);
+      border: none;
+      color: #040814;
+      font-weight: 900;
+      font-size: 1.25rem;
+      letter-spacing: 2px;
+      padding: 16px 36px;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.6), 0 4px 0 #0044aa;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      width: 100%;
+    }
+
+    .neon-arcade-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 40px rgba(0, 243, 255, 0.9), 0 6px 0 #0044aa;
+    }
+
+    .neon-arcade-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.5), 0 2px 0 #0044aa;
+    }
+
+    /* Game Over & Victory Specifics */
+    .defeat-box {
+      border-color: var(--neon-red);
+      box-shadow: 0 0 45px rgba(255, 0, 85, 0.5), inset 0 0 25px rgba(255, 0, 85, 0.15);
+    }
+
+    .defeat-title {
+      font-size: 3rem;
+      color: var(--neon-red);
+      text-shadow: 0 0 25px rgba(255, 0, 85, 0.9);
+      margin-bottom: 6px;
+    }
+
+    .victory-box {
+      border-color: var(--neon-yellow);
+      box-shadow: 0 0 45px rgba(255, 230, 0, 0.5), inset 0 0 25px rgba(255, 230, 0, 0.15);
+    }
+
+    .victory-title {
+      font-size: 3rem;
+      color: var(--neon-yellow);
+      text-shadow: 0 0 25px rgba(255, 230, 0, 0.9);
+      margin-bottom: 6px;
+    }
+
+    .stats-table {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0 28px 0;
+    }
+
+    .stat-cell {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .stat-title {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .stat-val {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin-top: 4px;
+    }
+
+    #stat-score { color: var(--neon-yellow); }
+    #stat-combo { color: var(--neon-cyan); }
+    #stat-wave { color: var(--neon-blue); }
+    #stat-best { color: var(--neon-pink); }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div class="crt-overlay"></div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+      <div class="hud-top">
+        <!-- Player Status Bars -->
+        <div class="hud-card player-bars">
+          <!-- Health -->
+          <div class="bar-row">
+            <div class="bar-label-line">
+              <span>HERO VITALITY</span>
+              <span id="hp-val">100%</span>
+            </div>
+            <div class="meter-wrap">
+              <div id="hp-fill"></div>
+            </div>
+          </div>
+          <!-- Ki Energy -->
+          <div class="bar-row">
+            <div class="bar-label-line">
+              <span id="ki-label">KI ENERGY</span>
+              <span id="ki-val">0%</span>
+            </div>
+            <div class="meter-wrap">
+              <div id="ki-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Combo Counter & Wave Banner -->
+        <div class="hud-center">
+          <div id="combo-display" class="combo-badge">0 HITS!</div>
+          <div id="alert-banner" class="alert-banner">WAVE 1: BRAWL!</div>
+        </div>
+
+        <!-- Score & Sound Toggle -->
+        <div class="hud-top-right">
+          <div class="hud-card score-card">
+            <div class="bar-label-line">
+              <span>SCORE</span>
+              <span id="wave-counter-tag" style="color: var(--neon-cyan);">WAVE 1</span>
+            </div>
+            <div id="score-val">000000</div>
+          </div>
+          <button id="btn-sound" class="btn-audio" title="Toggle Sound" aria-label="Toggle Sound">
+            <span id="audio-icon">🔊</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrolling Guide Arrow -->
+      <div id="go-arrow">GO ▶▶</div>
+
+      <!-- Bottom Boss Bar -->
+      <div class="hud-bottom">
+        <div id="boss-bar-card" class="hud-card">
+          <div class="bar-label-line">
+            <span style="color: var(--neon-purple); font-weight: 900;">MASTER SHADOW [DOJO BOSS]</span>
+            <span id="boss-hp-val">100%</span>
+          </div>
+          <div class="meter-wrap">
+            <div id="boss-hp-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Screen Modal -->
+    <div id="start-screen" class="screen-modal active">
+      <div class="modal-box">
+        <h1 class="game-logo-title">KUNG-FU STREET BRAWL<br><span>DOJO REVENGE</span></h1>
+        <div class="game-tagline">Classic 80s Neon Arcade Beat 'Em Up</div>
+
+        <div class="controls-grid">
+          <div class="ctrl-item">
+            <span class="kbd">A / D or ◀ ▶</span>
+            <span class="ctrl-desc">Walk Left / Right</span>
+          </div>
+          <div class="ctrl-item">
+            <span class="kbd">W or ▲</span>
+            <span class="ctrl-desc">Jump / Mid-Air Leap</span>
+          </div>
+          <div class="ctrl-item">
+            <span class="kbd">J</span>
+            <span class="ctrl-desc">Light Punch (Fast Combo)</span>
+          </div>
+          <div class="ctrl-item">
+            <span class="kbd">K</span>
+            <span class="ctrl-desc">High Kick (Power Strike)</span>
+          </div>
+          <div class="ctrl-item">
+            <span class="kbd">L</span>
+            <span class="ctrl-desc">Roundhouse (Knockback)</span>
+          </div>
+          <div class="ctrl-item">
+            <span class="kbd">J / K In Air</span>
+            <span class="ctrl-desc">Flying Jump-Kick</span>
+          </div>
+          <div class="ctrl-item" style="grid-column: span 2;">
+            <span class="kbd">SPACEBAR</span>
+            <span class="ctrl-desc">Dragon Strike (Screen-Clear at 100% Ki)</span>
+          </div>
+        </div>
+
+        <div class="roster-row">
+          <div class="roster-item">
+            <div class="dot dot-ninja"></div>
+            <span>Red Ninja Goons</span>
+          </div>
+          <div class="roster-item">
+            <div class="dot dot-striker"></div>
+            <span>Blue Jump Strikers</span>
+          </div>
+          <div class="roster-item">
+            <div class="dot dot-boss"></div>
+            <span>Alleyway Boss</span>
+          </div>
+        </div>
+
+        <button id="btn-start" class="neon-arcade-btn">ENTER THE ALLEY [PRESS ANY KEY]</button>
+      </div>
+    </div>
+
+    <!-- Game Over Screen Modal -->
+    <div id="game-over-screen" class="screen-modal">
+      <div class="modal-box defeat-box">
+        <h1 class="defeat-title">K.O.</h1>
+        <div class="game-tagline" style="color: var(--neon-red);">Defeated in the urban alleyways.</div>
+
+        <div class="stats-table">
+          <div class="stat-cell">
+            <div class="stat-title">FINAL SCORE</div>
+            <div id="stat-score" class="stat-val">0</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-title">MAX COMBO</div>
+            <div id="stat-combo" class="stat-val">0</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-title">WAVE REACHED</div>
+            <div id="stat-wave" class="stat-val">1</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-title">HIGH SCORE</div>
+            <div id="stat-best" class="stat-val">0</div>
+          </div>
+        </div>
+
+        <button id="btn-retry" class="neon-arcade-btn">CHALLENGE AGAIN [SPACE]</button>
+      </div>
+    </div>
+
+    <!-- Victory Screen Modal -->
+    <div id="victory-screen" class="screen-modal">
+      <div class="modal-box victory-box">
+        <h1 class="victory-title">DOJO CLEARED!</h1>
+        <div class="game-tagline" style="color: var(--neon-yellow);">Master Shadow eliminated. The streets are saved!</div>
+
+        <div class="stats-table">
+          <div class="stat-cell">
+            <div class="stat-title">VICTORY SCORE</div>
+            <div id="stat-vic-score" class="stat-val" style="color: var(--neon-yellow);">0</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-title">PEAK COMBO</div>
+            <div id="stat-vic-combo" class="stat-val" style="color: var(--neon-cyan);">0</div>
+          </div>
+        </div>
+
+        <button id="btn-vic-retry" class="neon-arcade-btn">PLAY AGAIN [SPACE]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       COMPLETE SINGLE-FILE GAME SCRIPT
+       ========================================================= -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ---------------------------------------------------------
+      // AUDIO SYNTHESIZER (Web Audio API)
+      // ---------------------------------------------------------
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.isMuted = false;
+        }
+        init() {
+          if (this.ctx) return;
+          try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioCtx();
+          } catch (e) {}
+        }
+        resume() {
+          if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        }
+        toggleMute() {
+          this.isMuted = !this.isMuted;
+          return this.isMuted;
+        }
+        playPunchWhoosh() {
+          if (!this.ctx || this.isMuted) return;
+          this.resume();
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        }
+        playHitImpact(isHeavy = false) {
+          if (!this.ctx || this.isMuted) return;
+          this.resume();
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(isHeavy ? 180 : 260, now);
+          osc.frequency.exponentialRampToValueAtTime(35, now + (isHeavy ? 0.18 : 0.1));
+          gain.gain.setValueAtTime(isHeavy ? 0.28 : 0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + (isHeavy ? 0.2 : 0.11));
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + (isHeavy ? 0.2 : 0.11));
+        }
+        playDragonRoar() {
+          if (!this.ctx || this.isMuted) return;
+          this.resume();
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(80, now);
+          osc.frequency.exponentialRampToValueAtTime(450, now + 0.4);
+          osc.frequency.exponentialRampToValueAtTime(30, now + 1.1);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 1.2);
+        }
+        playVictory() {
+          if (!this.ctx || this.isMuted) return;
+          this.resume();
+          const now = this.ctx.currentTime;
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+            gain.gain.setValueAtTime(0.18, now + idx * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.3);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.1);
+            osc.stop(now + idx * 0.1 + 0.3);
+          });
+        }
+      }
+      const sound = new SoundEngine();
+
+      // ---------------------------------------------------------
+      // CANVAS SETUP & RESIZING
+      // ---------------------------------------------------------
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // ---------------------------------------------------------
+      // SCREEN SHAKE & INPUTS
+      // ---------------------------------------------------------
+      let trauma = 0;
+      function addShake(amt) {
+        trauma = Math.min(1.0, trauma + amt);
+      }
+
+      const keys = {
+        left: false, right: false, jump: false,
+        punch: false, kick: false, roundhouse: false,
+        dragon: false
+      };
+
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'a' || e.key === 'ArrowLeft') keys.left = true;
+        if (k === 'd' || e.key === 'ArrowRight') keys.right = true;
+        if (k === 'w' || e.key === 'ArrowUp') keys.jump = true;
+        if (k === 'j') keys.punch = true;
+        if (k === 'k') keys.kick = true;
+        if (k === 'l') keys.roundhouse = true;
+        if (e.code === 'Space') {
+          keys.dragon = true;
+          if (gameState === 'START') startGame();
+          else if (gameState === 'GAMEOVER') resetGame();
+          else if (gameState === 'VICTORY') resetGame();
+        } else if (gameState === 'START') {
+          startGame();
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'a' || e.key === 'ArrowLeft') keys.left = false;
+        if (k === 'd' || e.key === 'ArrowRight') keys.right = false;
+        if (k === 'w' || e.key === 'ArrowUp') keys.jump = false;
+        if (k === 'j') keys.punch = false;
+        if (k === 'k') keys.kick = false;
+        if (k === 'l') keys.roundhouse = false;
+        if (e.code === 'Space') keys.dragon = false;
+      });
+
+      // ---------------------------------------------------------
+      // GAME STATE
+      // ---------------------------------------------------------
+      let gameState = 'START'; // START, PLAYING, GAMEOVER, VICTORY
+      let score = 0;
+      let comboCount = 0;
+      let maxCombo = 0;
+      let comboTimer = 0;
+      let bestScore = parseInt(localStorage.getItem('kungfu_best_score') || '0', 10);
+
+      // Waves & Camera Progression
+      let currentWave = 1;
+      let waveLocked = true;
+      let waveSpawnRemaining = 0;
+      let waveSpawnTimer = 0;
+      let arenaMinX = 0;
+      let arenaMaxX = width;
+
+      const camera = { x: 0 };
+      const groundY = () => height * 0.76;
+
+      // Particle & Comic Sparks
+      const particles = [];
+      const comicSparks = [];
+      const limbTrails = [];
+      let dragonStrikeAnim = null;
+
+      // ---------------------------------------------------------
+      // PLAYER FIGHTER OBJECT
+      // ---------------------------------------------------------
+      const player = {
+        x: 150,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        facing: 1, // 1 = right, -1 = left
+        width: 44,
+        height: 84,
+        state: 'IDLE', // IDLE, WALK, JUMP, PUNCH, KICK, ROUNDHOUSE, JUMP_KICK, HURT
+        stateTimer: 0,
+        health: 100,
+        maxHealth: 100,
+        ki: 0,
+        maxKi: 100,
+        isGrounded: true,
+        invulnTimer: 0,
+
+        reset() {
+          this.x = 150;
+          this.y = groundY();
+          this.vx = 0;
+          this.vy = 0;
+          this.facing = 1;
+          this.state = 'IDLE';
+          this.stateTimer = 0;
+          this.health = 100;
+          this.ki = 0;
+          this.invulnTimer = 0;
+        },
+
+        update(dt) {
+          // Gravity
+          if (!this.isGrounded) {
+            this.vy += 1600 * dt;
+            this.y += this.vy * dt;
+
+            if (this.y >= groundY()) {
+              this.y = groundY();
+              this.vy = 0;
+              this.isGrounded = true;
+              if (this.state === 'JUMP' || this.state === 'JUMP_KICK') {
+                this.state = 'IDLE';
+              }
+            }
+          }
+
+          // Invulnerability Decay
+          if (this.invulnTimer > 0) this.invulnTimer -= dt;
+
+          // State Machine
+          if (this.state === 'HURT') {
+            this.stateTimer -= dt;
+            this.x += this.vx * dt;
+            if (this.stateTimer <= 0) this.state = 'IDLE';
+            return;
+          }
+
+          // Attack Timers
+          const isAttacking = ['PUNCH', 'KICK', 'ROUNDHOUSE', 'JUMP_KICK'].includes(this.state);
+          if (isAttacking) {
+            this.stateTimer -= dt;
+            if (this.stateTimer <= 0) {
+              this.state = this.isGrounded ? 'IDLE' : 'JUMP';
+            }
+          }
+
+          // Movement Inputs (Only while not grounded attack)
+          if (!isAttacking || !this.isGrounded) {
+            let moveDir = 0;
+            if (keys.left) moveDir -= 1;
+            if (keys.right) moveDir += 1;
+
+            if (moveDir !== 0) {
+              this.facing = moveDir;
+              this.vx = moveDir * 260;
+              if (this.isGrounded && !isAttacking) this.state = 'WALK';
+            } else {
+              this.vx = 0;
+              if (this.isGrounded && !isAttacking) this.state = 'IDLE';
+            }
+
+            // Jump
+            if (keys.jump && this.isGrounded && !isAttacking) {
+              this.vy = -680;
+              this.isGrounded = false;
+              this.state = 'JUMP';
+              sound.playPunchWhoosh();
+            }
+
+            this.x += this.vx * dt;
+          }
+
+          // Clamp to Arena Bounds
+          this.x = Math.max(arenaMinX + 30, Math.min(arenaMaxX - 30, this.x));
+
+          // Attack Triggers
+          if (!isAttacking && this.state !== 'HURT') {
+            if (keys.dragon && this.ki >= 100) {
+              this.triggerDragonStrike();
+            } else if (!this.isGrounded && (keys.punch || keys.kick)) {
+              this.state = 'JUMP_KICK';
+              this.stateTimer = 0.35;
+              sound.playPunchWhoosh();
+              this.checkAttackHits(38, 220, true);
+            } else if (keys.roundhouse) {
+              this.state = 'ROUNDHOUSE';
+              this.stateTimer = 0.32;
+              sound.playPunchWhoosh();
+              this.checkAttackHits(42, 280, true);
+            } else if (keys.kick) {
+              this.state = 'KICK';
+              this.stateTimer = 0.25;
+              sound.playPunchWhoosh();
+              this.checkAttackHits(28, 140, false);
+            } else if (keys.punch) {
+              this.state = 'PUNCH';
+              this.stateTimer = 0.18;
+              sound.playPunchWhoosh();
+              this.checkAttackHits(16, 60, false);
+            }
+          }
+        },
+
+        checkAttackHits(damage, knockback, isHeavy) {
+          const attackRange = 75;
+          const hitX = this.x + this.facing * 45;
+          const hitY = this.y - 45;
+
+          // Add glowing martial energy limb trail
+          limbTrails.push({
+            x1: this.x,
+            y1: this.y - 40,
+            x2: hitX + this.facing * 20,
+            y2: hitY,
+            color: isHeavy ? '#ffe600' : '#00f3ff',
+            alpha: 1
+          });
+
+          let hitAny = false;
+
+          enemies.forEach(e => {
+            if (e.isDead) return;
+            const dist = Math.abs(e.x - this.x);
+            const yDist = Math.abs(e.y - this.y);
+
+            // In front of player
+            const inFront = (this.facing > 0 && e.x > this.x) || (this.facing < 0 && e.x < this.x);
+
+            if (inFront && dist < attackRange && yDist < 55) {
+              e.takeDamage(damage, this.facing * knockback, isHeavy);
+              hitAny = true;
+            }
+          });
+
+          if (hitAny) {
+            comboCount++;
+            if (comboCount > maxCombo) maxCombo = comboCount;
+            comboTimer = 2.0;
+
+            // Charge Ki Energy (+12% per hit, +25% on heavy)
+            this.ki = Math.min(this.maxKi, this.ki + (isHeavy ? 24 : 14));
+
+            // Floating Comic Spark (POW, CRASH, KICK)
+            const words = isHeavy ? ['CRASH!', 'ROUNDHOUSE!', 'WHAM!'] : ['POW!', 'KICK!', 'BAM!'];
+            const chosen = words[Math.floor(Math.random() * words.length)];
+            comicSparks.push(new ComicSpark(hitX, hitY - 10, chosen, isHeavy ? '#ffe600' : '#ff007f'));
+
+            sound.playHitImpact(isHeavy);
+            addShake(isHeavy ? 0.22 : 0.08);
+
+            // Update Combo Badge
+            const comboEl = document.getElementById('combo-display');
+            comboEl.style.display = 'block';
+            comboEl.textContent = `${comboCount} HITS!`;
+          }
+        },
+
+        triggerDragonStrike() {
+          this.ki = 0;
+          sound.playDragonRoar();
+          addShake(0.65);
+
+          dragonStrikeAnim = {
+            progress: 0,
+            duration: 1.1
+          };
+
+          comicSparks.push(new ComicSpark(this.x, this.y - 70, 'DRAGON STRIKE!', '#ffe600', 38));
+
+          // Massive damage to all on-screen enemies
+          enemies.forEach(e => {
+            if (!e.isDead) {
+              e.takeDamage(130, this.facing * 350, true);
+            }
+          });
+        },
+
+        takeHit(dmg, knockDir) {
+          if (this.invulnTimer > 0) return;
+          this.health -= dmg;
+          this.invulnTimer = 0.6;
+          this.state = 'HURT';
+          this.stateTimer = 0.3;
+          this.vx = knockDir * 180;
+          comboCount = 0; // Combo drops on hit
+          document.getElementById('combo-display').style.display = 'none';
+
+          sound.playHitImpact(true);
+          addShake(0.25);
+
+          comicSparks.push(new ComicSpark(this.x, this.y - 45, 'OUCH!', '#ff0055', 20));
+
+          if (this.health <= 0) {
+            this.health = 0;
+            triggerGameOver();
+          }
+        },
+
+        render() {
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          ctx.scale(this.facing, 1);
+
+          // Invulnerability Flash
+          if (this.invulnTimer > 0 && Math.floor(Date.now() / 60) % 2 === 0) {
+            ctx.globalAlpha = 0.4;
+          }
+
+          // Neon Glow
+          ctx.shadowBlur = 18;
+          ctx.shadowColor = '#00f3ff';
+
+          // ---------------- Cyan Gi Karate Fighter ----------------
+          // Legs
+          ctx.strokeStyle = '#00f3ff';
+          ctx.lineWidth = 6;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          let legAngleL = 0;
+          let legAngleR = 0;
+          let armAngleF = 0;
+          let armAngleB = 0;
+
+          if (this.state === 'WALK') {
+            const walkCycle = Math.sin(Date.now() * 0.015);
+            legAngleL = walkCycle * 0.45;
+            legAngleR = -walkCycle * 0.45;
+            armAngleF = -walkCycle * 0.4;
+            armAngleB = walkCycle * 0.4;
+          } else if (this.state === 'ROUNDHOUSE' || this.state === 'KICK') {
+            legAngleR = -1.45; // Kick outstretched horizontally!
+          } else if (this.state === 'JUMP_KICK') {
+            legAngleR = -1.55;
+            legAngleL = 0.5;
+          } else if (this.state === 'PUNCH') {
+            armAngleF = 1.35; // Punch outstretched!
+          }
+
+          // Back Leg
+          ctx.beginPath();
+          ctx.moveTo(-4, -36);
+          ctx.lineTo(-12 + Math.sin(legAngleL) * 22, -18);
+          ctx.lineTo(-12 + Math.sin(legAngleL) * 22, 0);
+          ctx.stroke();
+
+          // Front Leg
+          ctx.beginPath();
+          ctx.moveTo(4, -36);
+          ctx.lineTo(8 + Math.cos(legAngleR) * 25, -18 + Math.sin(legAngleR) * 25);
+          ctx.lineTo(10 + Math.cos(legAngleR) * 35, Math.sin(legAngleR) * 35);
+          ctx.stroke();
+
+          // Torso (Cyan Gi Jacket)
+          ctx.fillStyle = '#061a2b';
+          ctx.strokeStyle = '#00f3ff';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.roundRect(-14, -66, 28, 32, 6);
+          ctx.fill();
+          ctx.stroke();
+
+          // Glowing Golden Sash / Belt
+          ctx.shadowColor = '#ffe600';
+          ctx.fillStyle = '#ffe600';
+          ctx.fillRect(-15, -42, 30, 8);
+          // Belt tails hanging
+          ctx.beginPath();
+          ctx.moveTo(-6, -34);
+          ctx.lineTo(-10, -18);
+          ctx.stroke();
+
+          // Head & Spiky Hair
+          ctx.shadowColor = '#00f3ff';
+          ctx.fillStyle = '#ffedd5'; // Skin tone
+          ctx.beginPath();
+          ctx.arc(0, -75, 9, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Cyan Headband
+          ctx.fillStyle = '#00f3ff';
+          ctx.fillRect(-10, -80, 20, 5);
+          // Headband ribbons fluttering behind
+          ctx.strokeStyle = '#00f3ff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-9, -78);
+          ctx.lineTo(-24, -74 + Math.sin(Date.now() * 0.02) * 4);
+          ctx.stroke();
+
+          // Arms & Fists
+          ctx.strokeStyle = '#00f3ff';
+          ctx.lineWidth = 5;
+
+          // Back Arm
+          ctx.beginPath();
+          ctx.moveTo(-6, -60);
+          ctx.lineTo(-18 + Math.cos(armAngleB) * 16, -48 + Math.sin(armAngleB) * 16);
+          ctx.stroke();
+
+          // Front Arm / Punching Fist
+          ctx.beginPath();
+          ctx.moveTo(8, -60);
+          if (this.state === 'PUNCH') {
+            ctx.lineTo(34, -58); // Outstretched punch!
+            // Golden fist glow
+            ctx.fillStyle = '#ffe600';
+            ctx.shadowColor = '#ffe600';
+            ctx.beginPath();
+            ctx.arc(36, -58, 6, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.lineTo(16 + Math.cos(armAngleF) * 16, -48 + Math.sin(armAngleF) * 16);
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        }
+      };
+
+      // ---------------------------------------------------------
+      // ENEMY CLASSES (Red Ninja, Blue Striker, Alleyway Boss)
+      // ---------------------------------------------------------
+      const enemies = [];
+
+      class Enemy {
+        constructor(x, typeKey) {
+          this.x = x;
+          this.y = groundY();
+          this.vx = 0;
+          this.vy = 0;
+          this.typeKey = typeKey;
+          this.facing = -1;
+          this.isDead = false;
+          this.isGrounded = true;
+          this.attackCooldown = 1.0 + Math.random() * 1.5;
+
+          if (typeKey === 'NINJA') {
+            this.color = '#ff0055';
+            this.maxHealth = 45;
+            this.speed = 135;
+            this.damage = 8;
+            this.scoreVal = 150;
+            this.width = 40;
+            this.height = 80;
+          } else if (typeKey === 'STRIKER') {
+            this.color = '#00a2ff';
+            this.maxHealth = 65;
+            this.speed = 210;
+            this.damage = 14;
+            this.scoreVal = 250;
+            this.width = 40;
+            this.height = 80;
+          } else if (typeKey === 'BOSS') {
+            this.color = '#9900ff';
+            this.maxHealth = 340;
+            this.speed = 115;
+            this.damage = 22;
+            this.scoreVal = 1500;
+            this.width = 54;
+            this.height = 96;
+            this.isBoss = true;
+          }
+
+          this.health = this.maxHealth;
+          this.state = 'IDLE'; // IDLE, WALK, ATTACK, HURT
+          this.stateTimer = 0;
+        }
+
+        update(dt) {
+          if (this.isDead) return;
+
+          // Gravity
+          if (!this.isGrounded) {
+            this.vy += 1600 * dt;
+            this.y += this.vy * dt;
+            if (this.y >= groundY()) {
+              this.y = groundY();
+              this.vy = 0;
+              this.isGrounded = true;
+            }
+          }
+
+          if (this.state === 'HURT') {
+            this.stateTimer -= dt;
+            this.x += this.vx * dt;
+            if (this.stateTimer <= 0) this.state = 'IDLE';
+            return;
+          }
+
+          // Face player
+          this.facing = player.x > this.x ? 1 : -1;
+
+          const dist = Math.abs(player.x - this.x);
+          this.attackCooldown -= dt;
+
+          // AI Combat Logic
+          if (this.state === 'ATTACK') {
+            this.stateTimer -= dt;
+            if (this.stateTimer <= 0) this.state = 'IDLE';
+          } else {
+            // Approach Player
+            const desiredDist = this.typeKey === 'STRIKER' ? 140 : 55;
+
+            if (dist > desiredDist) {
+              this.vx = this.facing * this.speed;
+              this.x += this.vx * dt;
+              this.state = 'WALK';
+            } else {
+              this.vx = 0;
+              this.state = 'IDLE';
+
+              // Strike player
+              if (this.attackCooldown <= 0) {
+                this.executeAttack(dist);
+              }
+            }
+          }
+
+          // Clamp within active arena bounds
+          this.x = Math.max(arenaMinX + 20, Math.min(arenaMaxX - 20, this.x));
+        }
+
+        executeAttack(dist) {
+          this.state = 'ATTACK';
+          this.stateTimer = 0.4;
+          this.attackCooldown = 1.4 + Math.random() * 0.8;
+
+          if (this.typeKey === 'STRIKER') {
+            // Flying jump-kick
+            this.vy = -450;
+            this.isGrounded = false;
+            this.vx = this.facing * 320;
+          }
+
+          sound.playPunchWhoosh();
+
+          // Check if attack lands on player
+          setTimeout(() => {
+            if (this.isDead) return;
+            const currentDist = Math.abs(player.x - this.x);
+            if (currentDist < 75) {
+              player.takeHit(this.damage, this.facing);
+            }
+          }, 180);
+        }
+
+        takeDamage(dmg, knockVel, isHeavy) {
+          this.health -= dmg;
+          this.state = 'HURT';
+          this.stateTimer = 0.35;
+          this.vx = knockVel;
+
+          // Blood / Energy hit sparks
+          for (let i = 0; i < 6; i++) {
+            particles.push(new HitSparkParticle(this.x, this.y - 45, this.color));
+          }
+
+          if (this.health <= 0) {
+            this.isDead = true;
+            score += this.scoreVal;
+
+            // Big death explosion of neon embers
+            for (let i = 0; i < 14; i++) {
+              particles.push(new HitSparkParticle(this.x, this.y - 45, this.color, 4));
+            }
+
+            if (this.isBoss) {
+              setTimeout(triggerVictory, 1000);
+            }
+          }
+        }
+
+        render() {
+          if (this.isDead) return;
+
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          ctx.scale(this.facing, 1);
+
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = this.color;
+
+          // Legs
+          ctx.strokeStyle = this.color;
+          ctx.lineWidth = 5;
+          ctx.lineCap = 'round';
+
+          let walkAnim = Math.sin(Date.now() * 0.015);
+          if (this.state !== 'WALK') walkAnim = 0;
+
+          ctx.beginPath();
+          ctx.moveTo(-5, -34);
+          ctx.lineTo(-10 + walkAnim * 15, 0);
+          ctx.moveTo(5, -34);
+          ctx.lineTo(10 - walkAnim * 15, 0);
+          ctx.stroke();
+
+          // Body Gi Jacket
+          ctx.fillStyle = '#0a0d18';
+          ctx.strokeStyle = this.color;
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          const bodyH = this.isBoss ? 42 : 32;
+          ctx.roundRect(-12, -34 - bodyH, 24, bodyH, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          // Head / Ninja Hood
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(0, -42 - bodyH, this.isBoss ? 11 : 9, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Mask Eyes
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(2, -44 - bodyH, 4, 3);
+
+          // Arms / Fist
+          ctx.strokeStyle = this.color;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(0, -25 - bodyH);
+          if (this.state === 'ATTACK') {
+            ctx.lineTo(26, -22 - bodyH);
+          } else {
+            ctx.lineTo(12, -14 - bodyH);
+          }
+          ctx.stroke();
+
+          ctx.restore();
+
+          // Mini Health Bar above damaged goons
+          if (!this.isBoss && this.health < this.maxHealth) {
+            const barW = 34;
+            const ratio = Math.max(0, this.health / this.maxHealth);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(this.x - barW / 2, this.y - 88, barW, 4);
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x - barW / 2, this.y - 88, barW * ratio, 4);
+          }
+        }
+      }
+
+      // ---------------------------------------------------------
+      // COMIC HIT SPARKS & PARTICLES
+      // ---------------------------------------------------------
+      class ComicSpark {
+        constructor(x, y, text, color, fontSize = 24) {
+          this.x = x;
+          this.y = y;
+          this.text = text;
+          this.color = color;
+          this.fontSize = fontSize;
+          this.life = 0;
+          this.maxLife = 0.55;
+        }
+        update(dt) {
+          this.y -= 25 * dt;
+          this.life += dt;
+        }
+        render() {
+          const progress = this.life / this.maxLife;
+          const alpha = Math.max(0, 1 - progress);
+          const scale = 1 + Math.sin(progress * Math.PI) * 0.25;
+
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = alpha;
+
+          // Comic Starburst Burst
+          ctx.shadowBlur = 18;
+          ctx.shadowColor = this.color;
+          ctx.fillStyle = this.color;
+          ctx.font = `900 ${this.fontSize}px Impact, "Segoe UI", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          // Black Outline
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 4;
+          ctx.strokeText(this.text, 0, 0);
+          ctx.fillText(this.text, 0, 0);
+
+          ctx.restore();
+        }
+      }
+
+      class HitSparkParticle {
+        constructor(x, y, color, size = 3) {
+          this.x = x;
+          this.y = y;
+          const angle = Math.random() * Math.PI * 2;
+          const spd = 60 + Math.random() * 180;
+          this.vx = Math.cos(angle) * spd;
+          this.vy = Math.sin(angle) * spd;
+          this.color = color;
+          this.size = size;
+          this.life = 0;
+          this.maxLife = 0.35 + Math.random() * 0.2;
+        }
+        update(dt) {
+          this.x += this.vx * dt;
+          this.y += this.vy * dt;
+          this.vy += 450 * dt; // Gravity
+          this.life += dt;
+        }
+        render() {
+          const a = Math.max(0, 1 - this.life / this.maxLife);
+          ctx.save();
+          ctx.globalAlpha = a;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = this.color;
+          ctx.fillStyle = this.color;
+          ctx.fillRect(this.x, this.y, this.size, this.size);
+          ctx.restore();
+        }
+      }
+
+      // ---------------------------------------------------------
+      // PARALLAX RETRO NEON ALLEYWAY
+      // ---------------------------------------------------------
+      const neonSigns = [
+        { text: '⚡ DOJO ⚡', x: 220, y: 160, color: '#ff007f' },
+        { text: '🍜 RAMEN 24H', x: 620, y: 190, color: '#ffe600' },
+        { text: '🕹️ ARCADE', x: 1080, y: 150, color: '#00f3ff' },
+        { text: '竜 DRAGON BAR', x: 1520, y: 175, color: '#9900ff' },
+        { text: '🥋 BLACK BELT', x: 1980, y: 160, color: '#ff0055' }
+      ];
+
+      function renderAlleyway(time) {
+        // Deep Navy Dark Sky & Distant Skyline
+        ctx.fillStyle = '#040714';
+        ctx.fillRect(0, 0, width, height);
+
+        // 1. Distant Parallax Skyscrapers
+        const farOffset = camera.x * 0.15;
+        ctx.fillStyle = '#0b1024';
+        for (let bx = -100; bx < width + 400; bx += 140) {
+          const worldBx = bx - (farOffset % 140);
+          const bH = 260 + (Math.abs(Math.sin(bx * 13)) * 140);
+          ctx.fillRect(worldBx, groundY() - bH, 110, bH);
+
+          // Glowing Skyscraper windows
+          ctx.fillStyle = 'rgba(0, 243, 255, 0.25)';
+          for (let wy = groundY() - bH + 20; wy < groundY() - 30; wy += 22) {
+            ctx.fillRect(worldBx + 20, wy, 14, 8);
+            ctx.fillRect(worldBx + 60, wy, 14, 8);
+          }
+          ctx.fillStyle = '#0b1024';
+        }
+
+        // 2. Mid Brick Alley Wall
+        const midOffset = camera.x * 0.55;
+        ctx.fillStyle = '#10162e';
+        ctx.fillRect(0, groundY() - 280, width, 280);
+
+        // Brick mortar lines
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.lineWidth = 2;
+        for (let by = groundY() - 280; by < groundY(); by += 24) {
+          ctx.beginPath();
+          ctx.moveTo(0, by);
+          ctx.lineTo(width, by);
+          ctx.stroke();
+        }
+
+        // Neon Storefront Signs
+        neonSigns.forEach((sign, idx) => {
+          const screenX = sign.x - camera.x;
+          if (screenX > -250 && screenX < width + 250) {
+            // Neon sign flicker
+            const flicker = Math.sin(time * 12 + idx) > -0.85;
+            if (flicker) {
+              ctx.save();
+              ctx.shadowBlur = 24;
+              ctx.shadowColor = sign.color;
+              ctx.fillStyle = sign.color;
+              ctx.font = '900 28px "Segoe UI", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(sign.text, screenX, sign.y);
+              ctx.restore();
+            }
+          }
+        });
+
+        // 3. Wet Asphalt Ground with Neon Reflections
+        ctx.fillStyle = '#070a16';
+        ctx.fillRect(0, groundY(), width, height - groundY());
+
+        // Glowing curb boundary line
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#00f3ff';
+        ctx.strokeStyle = '#00f3ff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY());
+        ctx.lineTo(width, groundY());
+        ctx.stroke();
+
+        // Wet puddle reflections
+        ctx.fillStyle = 'rgba(255, 0, 127, 0.12)';
+        ctx.beginPath();
+        ctx.ellipse(width * 0.3, groundY() + 35, 120, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(0, 243, 255, 0.12)';
+        ctx.beginPath();
+        ctx.ellipse(width * 0.7, groundY() + 50, 140, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ---------------------------------------------------------
+      // CELESTIAL DRAGON STRIKE RENDERER
+      // ---------------------------------------------------------
+      function renderDragonStrike(progress) {
+        ctx.save();
+        ctx.globalAlpha = Math.sin(progress * Math.PI);
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = '#ffe600';
+        ctx.strokeStyle = '#ffe600';
+        ctx.lineWidth = 18;
+        ctx.lineCap = 'round';
+
+        // Sinusoidal Dragon Serpent Swirling across the screen
+        ctx.beginPath();
+        for (let x = 0; x < width; x += 25) {
+          const y = (height * 0.45) + Math.sin((x * 0.015) + (progress * 15)) * 120;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Hot Pink Inner Dragon Core
+        ctx.strokeStyle = '#ff007f';
+        ctx.lineWidth = 8;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      // ---------------------------------------------------------
+      // WAVE & ENEMY SPAWN MANAGEMENT
+      // ---------------------------------------------------------
+      function setupWave(waveNum) {
+        currentWave = waveNum;
+        waveLocked = true;
+        document.getElementById('go-arrow').style.display = 'none';
+
+        // Lock arena around player
+        arenaMinX = camera.x;
+        arenaMaxX = camera.x + width;
+
+        const banner = document.getElementById('alert-banner');
+        document.getElementById('wave-counter-tag').textContent = `WAVE ${waveNum}`;
+
+        if (waveNum === 1) {
+          waveSpawnRemaining = 6;
+          banner.textContent = 'WAVE 1: STREET BRAWL!';
+        } else if (waveNum === 2) {
+          waveSpawnRemaining = 10;
+          banner.textContent = 'WAVE 2: REINFORCEMENTS!';
+        } else if (waveNum === 3) {
+          waveSpawnRemaining = 1; // Boss wave
+          banner.textContent = 'FINAL BATTLE: MASTER SHADOW!';
+          document.getElementById('boss-bar-card').style.display = 'block';
+        }
+
+        banner.classList.add('show');
+        setTimeout(() => banner.classList.remove('show'), 2000);
+
+        waveSpawnTimer = 0.5;
+      }
+
+      function spawnWaveEnemy() {
+        if (currentWave === 3) {
+          // Spawn Alleyway Boss!
+          enemies.push(new Enemy(arenaMaxX - 120, 'BOSS'));
+          waveSpawnRemaining = 0;
+          return;
+        }
+
+        // Alternate spawn sides (left or right of screen)
+        const spawnRight = Math.random() < 0.65;
+        const spawnX = spawnRight ? arenaMaxX + 40 : arenaMinX - 40;
+
+        // Wave 1: Mostly Red Ninjas. Wave 2: Mix of Strikers & Ninjas.
+        const pickStriker = currentWave >= 2 && Math.random() < 0.5;
+        enemies.push(new Enemy(spawnX, pickStriker ? 'STRIKER' : 'NINJA'));
+        waveSpawnRemaining--;
+      }
+
+      // ---------------------------------------------------------
+      // GAME CYCLE (START, PLAYING, GAMEOVER, VICTORY)
+      // ---------------------------------------------------------
+      function startGame() {
+        sound.init();
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('game-over-screen').classList.remove('active');
+        document.getElementById('victory-screen').classList.remove('active');
+
+        gameState = 'PLAYING';
+        score = 0;
+        comboCount = 0;
+        maxCombo = 0;
+        enemies.length = 0;
+        particles.length = 0;
+        comicSparks.length = 0;
+        limbTrails.length = 0;
+        camera.x = 0;
+
+        player.reset();
+        setupWave(1);
+      }
+
+      function resetGame() {
+        startGame();
+      }
+
+      function triggerGameOver() {
+        gameState = 'GAMEOVER';
+        addShake(0.5);
+
+        if (score > bestScore) {
+          bestScore = score;
+          localStorage.setItem('kungfu_best_score', bestScore.toString());
+        }
+
+        document.getElementById('stat-score').textContent = score.toString();
+        document.getElementById('stat-combo').textContent = maxCombo.toString();
+        document.getElementById('stat-wave').textContent = currentWave.toString();
+        document.getElementById('stat-best').textContent = bestScore.toString();
+
+        document.getElementById('game-over-screen').classList.add('active');
+      }
+
+      function triggerVictory() {
+        gameState = 'VICTORY';
+        sound.playVictory();
+
+        if (score > bestScore) {
+          bestScore = score;
+          localStorage.setItem('kungfu_best_score', bestScore.toString());
+        }
+
+        document.getElementById('stat-vic-score').textContent = score.toString();
+        document.getElementById('stat-vic-combo').textContent = maxCombo.toString();
+        document.getElementById('victory-screen').classList.add('active');
+      }
+
+      // ---------------------------------------------------------
+      // MAIN GAME LOOP (60 FPS)
+      // ---------------------------------------------------------
+      let lastTime = performance.now();
+
+      function gameLoop(now) {
+        requestAnimationFrame(gameLoop);
+
+        let dt = (now - lastTime) / 1000;
+        lastTime = now;
+        if (dt > 0.05) dt = 0.05;
+
+        // -------------------------------------------------------
+        // UPDATE PHASE
+        // -------------------------------------------------------
+        if (gameState === 'PLAYING') {
+          player.update(dt);
+
+          // Combo Timer Decay
+          if (comboTimer > 0) {
+            comboTimer -= dt;
+            if (comboTimer <= 0) {
+              comboCount = 0;
+              document.getElementById('combo-display').style.display = 'none';
+            }
+          }
+
+          // Enemy Spawning Loop
+          if (waveLocked) {
+            waveSpawnTimer -= dt;
+            if (waveSpawnTimer <= 0 && waveSpawnRemaining > 0) {
+              spawnWaveEnemy();
+              waveSpawnTimer = 1.6 + Math.random() * 0.8;
+            }
+
+            // Check if wave is cleared
+            const activeEnemies = enemies.filter(e => !e.isDead);
+            if (waveSpawnRemaining <= 0 && activeEnemies.length === 0) {
+              waveLocked = false;
+              if (currentWave < 3) {
+                // Flash "GO --->" arrow!
+                document.getElementById('go-arrow').style.display = 'block';
+                const banner = document.getElementById('alert-banner');
+                banner.textContent = 'AREA SECURED! GO --->';
+                banner.classList.add('show');
+                setTimeout(() => banner.classList.remove('show'), 1800);
+              }
+            }
+          } else {
+            // Player is progressing right
+            arenaMaxX = camera.x + width;
+            if (player.x > arenaMaxX - 80) {
+              setupWave(currentWave + 1);
+            }
+          }
+
+          // Smooth Camera Scrolling
+          if (!waveLocked) {
+            const targetCamX = Math.max(0, player.x - width * 0.35);
+            camera.x += (targetCamX - camera.x) * 2.5 * dt;
+          }
+
+          // Update Enemies
+          enemies.forEach(e => e.update(dt));
+
+          // Dragon Strike Animation Progress
+          if (dragonStrikeAnim) {
+            dragonStrikeAnim.progress += dt / dragonStrikeAnim.duration;
+            if (dragonStrikeAnim.progress >= 1) {
+              dragonStrikeAnim = null;
+            }
+          }
+
+          // Update HUD Values
+          const hpPct = Math.max(0, Math.round((player.health / player.maxHealth) * 100));
+          document.getElementById('hp-val').textContent = `${hpPct}%`;
+          document.getElementById('hp-fill').style.width = `${hpPct}%`;
+
+          const kiPct = Math.min(100, Math.round((player.ki / player.maxKi) * 100));
+          document.getElementById('ki-val').textContent = `${kiPct}%`;
+          const kiFill = document.getElementById('ki-fill');
+          kiFill.style.width = `${kiPct}%`;
+
+          if (kiPct >= 100) {
+            kiFill.classList.add('ki-ready');
+            document.getElementById('ki-label').textContent = 'DRAGON STRIKE READY [SPACE]';
+          } else {
+            kiFill.classList.remove('ki-ready');
+            document.getElementById('ki-label').textContent = 'KI ENERGY';
+          }
+
+          document.getElementById('score-val').textContent = score.toString().padStart(6, '0');
+
+          // Boss Health Bar Update
+          const boss = enemies.find(e => e.isBoss);
+          if (boss && !boss.isDead) {
+            const bPct = Math.max(0, Math.round((boss.health / boss.maxHealth) * 100));
+            document.getElementById('boss-hp-val').textContent = `${bPct}%`;
+            document.getElementById('boss-hp-fill').style.width = `${bPct}%`;
+          }
+        }
+
+        // Update Particles, Comic Sparks & Limb Trails
+        for (let i = particles.length - 1; i >= 0; i--) {
+          particles[i].update(dt);
+          if (particles[i].life >= particles[i].maxLife) particles.splice(i, 1);
+        }
+        for (let i = comicSparks.length - 1; i >= 0; i--) {
+          comicSparks[i].update(dt);
+          if (comicSparks[i].life >= comicSparks[i].maxLife) comicSparks.splice(i, 1);
+        }
+        for (let i = limbTrails.length - 1; i >= 0; i--) {
+          limbTrails[i].alpha -= dt * 4.5;
+          if (limbTrails[i].alpha <= 0) limbTrails.splice(i, 1);
+        }
+
+        // Screen Shake Decay
+        trauma = Math.max(0, trauma - dt * 1.8);
+        const shake = trauma * trauma;
+        const shakeX = (Math.random() * 2 - 1) * shake * 22;
+        const shakeY = (Math.random() * 2 - 1) * shake * 22;
+
+        // -------------------------------------------------------
+        // RENDER PHASE
+        // -------------------------------------------------------
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+
+        // 1. Alleyway Parallax Background
+        renderAlleyway(now / 1000);
+
+        // 2. World Space Transformation
+        ctx.save();
+        ctx.translate(-camera.x, 0);
+
+        // Limb Trails (Glowing Kick & Punch Arcs)
+        limbTrails.forEach(t => {
+          ctx.save();
+          ctx.globalAlpha = t.alpha;
+          ctx.shadowBlur = 20;
+          ctx.shadowColor = t.color;
+          ctx.strokeStyle = t.color;
+          ctx.lineWidth = 12;
+          ctx.beginPath();
+          ctx.moveTo(t.x1, t.y1);
+          ctx.lineTo(t.x2, t.y2);
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        // Enemies
+        enemies.forEach(e => e.render());
+
+        // Player
+        if (gameState === 'PLAYING') {
+          player.render();
+        }
+
+        // Particles & Comic Hits
+        particles.forEach(p => p.render());
+        comicSparks.forEach(c => c.render());
+
+        ctx.restore();
+
+        // 3. Dragon Strike Celestial Animation (Screen-Space)
+        if (dragonStrikeAnim) {
+          renderDragonStrike(dragonStrikeAnim.progress);
+        }
+
+        ctx.restore();
+      }
+
+      // ---------------------------------------------------------
+      // EVENT LISTENERS & INITIALIZATION
+      // ---------------------------------------------------------
+      document.getElementById('btn-start').addEventListener('click', startGame);
+      document.getElementById('btn-retry').addEventListener('click', resetGame);
+      document.getElementById('btn-vic-retry').addEventListener('click', resetGame);
+
+      const btnSound = document.getElementById('btn-sound');
+      const audioIcon = document.getElementById('audio-icon');
+      btnSound.addEventListener('click', () => {
+        sound.init();
+        const muted = sound.toggleMute();
+        audioIcon.textContent = muted ? '🔇' : '🔊';
+      });
+
+      requestAnimationFrame(gameLoop);
+
+    })();
+  </script>
+</body>
+</html>
